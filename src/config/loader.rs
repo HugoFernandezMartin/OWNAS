@@ -1,9 +1,12 @@
 use crate::config::{Config, LoggingConfig, ServerConfig};
 
-pub fn load_config(config_path: &str) -> Result<Config, String>{
+pub fn load_config(_config_path: &str) -> Result<Config, anyhow::Error>{
+    //TODO
     Ok(Config { logging: LoggingConfig {
         tracing_level: tracing::Level::INFO
     }, server: ServerConfig {
-        addr: "127.0.0.1:8080".to_string()
+        host: "localhost".to_string(),
+        port: 8080,
+        ipc_socket_path: None
     } })
 }
