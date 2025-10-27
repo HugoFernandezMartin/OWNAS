@@ -1,1 +1,4 @@
-pub enum ServerStatus {}
+pub enum ServerStatus {
+    Running,
+    Offline
+}
