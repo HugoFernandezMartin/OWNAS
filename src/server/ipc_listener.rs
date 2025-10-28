@@ -7,8 +7,8 @@ use tokio::{net::UnixListener, sync::broadcast::{self,Sender}};
 
 use crate::Server;
 
-pub async fn run_ipc_listener(server: Arc<Server>, tx_shutdown: Sender<()>) -> anyhow::Result<()> {
-    let socket_path = server.cfg.ipc_socket();
+pub async fn run_ipc_listener(_server: Arc<Server>, tx_shutdown: Sender<()>) -> anyhow::Result<()> {
+    let socket_path = "/tmp/ownas.sock";
     //Creates unix socket
     let listener = UnixListener::bind(socket_path)?;
     tracing::info!("IPC server running");
@@ -36,14 +36,18 @@ pub async fn run_ipc_listener(server: Arc<Server>, tx_shutdown: Sender<()>) -> a
 
                     match message.trim() {
                         "stop" => {
+                            stream.write_all(b"Stopping server").await?;
                             tracing::info!("Stopping server...");
                             let _ = loop_shutdown_tx.send(()); //Send shutdown signal to father
                         }
                         "status" => {
                             stream.write_all(b"Server is running").await?;
+                            tracing::info!("Status request");
                         }
                         cmd => {
-                            println!("Received unknown command: {cmd}");
+                            if !cmd.trim().is_empty() { //TODO change this: result of connect in waiting for daemon
+                                println!("Received unknown command: {cmd}");
+                            }   
                         }
                     }
                     Ok::<_, anyhow::Error>(())

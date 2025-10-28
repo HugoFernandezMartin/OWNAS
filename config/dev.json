@@ -5,7 +5,6 @@
   },
   "server": {
     "host": "localhost",
-    "port": 8080,
-    "ipc_socket_path": "/tmp/ownas.sock"
+    "port": 8080
   }
 }

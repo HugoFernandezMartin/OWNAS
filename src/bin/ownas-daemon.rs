@@ -5,18 +5,19 @@ use tokio::sync::broadcast;
 
 
 // src/bin/ownas-daemon.rs
-use tracing::{info, error};
+use tracing::{info};
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     //Load config.json
     let cfg = load_config("config/dev.json")?;
-    init_logging(&cfg.logging)?;
 
-    if Path::new(cfg.ipc_socket()).exists() {
-        error!("Server already running");
+    if Path::new("/tmp/ownas.sock").exists() {
+        eprintln!("Server already running");
         std::process::exit(1)
     }
 
+    let _guard = init_logging(&cfg.logging)?;
 
     //Build shared server struct
     let server = Arc::new(builder::ServerBuilder::new(cfg).build());

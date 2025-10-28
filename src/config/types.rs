@@ -7,13 +7,6 @@ pub struct Config {
     pub server: ServerConfig
 }
 
-
-impl Config {
-    pub fn ipc_socket(&self) -> &str {
-        self.server.ipc_socket_path.as_deref().unwrap_or("/tmp/ownas.sock")
-    }
-}
-
 //Logging tool configuration
 #[derive(Clone, Deserialize, Serialize)]
 pub struct LoggingConfig {
@@ -42,7 +35,6 @@ impl LoggingConfig {
 pub struct ServerConfig {
     pub host: String,
     pub port: u16,
-    pub ipc_socket_path: Option<String>
 }
 
 impl ServerConfig {
