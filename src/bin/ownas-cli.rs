@@ -22,10 +22,14 @@ async fn main() -> anyhow::Result<()> {
             }
         }
         Commands::Stop => {
-            send_command("stop").await?;
+            if let Err(_) = send_command("stop").await {
+                    println!("Server is offline");
+            }
         }
         Commands::Status => {
-            send_command("status").await?;
+            if let Err(_) = send_command("status").await {
+                    println!("Server is offline");
+            }
         }
     }
 

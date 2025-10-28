@@ -1,0 +1,11 @@
+{
+  "logging": {
+    "tracing_level": "INFO",
+    "logfile_path": "tmp/ownas.log"
+  },
+  "server": {
+    "host": "localhost",
+    "port": 8080,
+    "ipc_socket_path": "/tmp/ownas.sock"
+  }
+}
