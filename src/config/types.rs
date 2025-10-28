@@ -1,29 +1,40 @@
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone)]
+
+#[derive(Clone, Deserialize, Serialize)]
 pub struct Config {
     pub logging: LoggingConfig,
     pub server: ServerConfig
 }
 
+//Logging tool configuration
+#[derive(Clone, Deserialize, Serialize)]
+pub struct LoggingConfig {
+    pub tracing_level: String,
+    pub logfile_path: String
+}
 
-impl Config {
-    pub fn ipc_socket(&self) -> &str {
-        self.server.ipc_socket_path.as_deref().unwrap_or("/tmp/ownas.sock")
+impl LoggingConfig {
+    pub fn get_tracing_level(&self) -> tracing::Level {
+        match self.tracing_level.as_str() {
+            "INFO" => tracing::Level::INFO,
+            "DEBUG" => tracing::Level::DEBUG,
+            "ERROR" => tracing::Level::ERROR,
+            "TRACE" => tracing::Level::TRACE,
+            "WARN" => tracing::Level::WARN,
+            invalid => {
+                eprintln!("⚠️ Invalid tracing level '{}', defaulting to INFO", invalid);
+                tracing::Level::INFO
+            }
+        }
     }
 }
 
-//Logging tool configuration
-#[derive(Clone)]
-pub struct LoggingConfig {
-    pub tracing_level: tracing::Level
-}
-
 //Server configuration
-#[derive(Clone)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct ServerConfig {
     pub host: String,
     pub port: u16,
-    pub ipc_socket_path: Option<String>
 }
 
 impl ServerConfig {
