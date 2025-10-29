@@ -22,7 +22,7 @@ async fn main() -> anyhow::Result<()> {
     //Build shared server struct
     let server = Arc::new(builder::ServerBuilder::new(cfg).build());
 
-    info!("Daemon starting...");
+    info!("Server starting...");
 
     //Create channel of comunication between threads
     let (shutdown_tx, _) = broadcast::channel::<()>(1);
@@ -39,7 +39,7 @@ async fn main() -> anyhow::Result<()> {
     //Wait for threads to finish
     let _ = tokio::join!(tcp, ipc);
     
-    info!("Daemon shutting down...");
+    info!("Server shutting down...");
     
     std::process::exit(1)
 }

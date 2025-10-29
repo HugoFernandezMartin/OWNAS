@@ -15,6 +15,7 @@ pub struct LoggingConfig {
 }
 
 impl LoggingConfig {
+    //Parse the tracing level string in config file
     pub fn get_tracing_level(&self) -> tracing::Level {
         match self.tracing_level.as_str() {
             "INFO" => tracing::Level::INFO,
