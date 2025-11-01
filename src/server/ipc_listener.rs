@@ -74,7 +74,14 @@ pub async fn run_ipc_listener(server: Arc<Server>, tx_shutdown: Sender<()>) -> a
                         Commands::Run {subcommand} => {
                             match subcommand {
                                 RunCommands::ShowLog => {
-                                    todo!()
+                                    let response = match server_clone.get_log() {
+                                        Ok(log) => DaemonResponse::Info(log),
+                                        Err(e) => DaemonResponse::Error(e.to_string()),
+                                    };
+
+                                    send_response(stream, response).await?;
+
+                                    tracing::trace!("Log response sended succesfully");
                                 }
                             }
                         }
