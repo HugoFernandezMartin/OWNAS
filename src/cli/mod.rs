@@ -1,9 +1,9 @@
-pub mod commands;
 pub mod client;
+pub mod handlers;
 
 use clap::{Parser};
 
-use commands::Commands;
+use crate::commands::Commands;
 
 #[derive(Parser)]
 #[command(name = "ownas")]
