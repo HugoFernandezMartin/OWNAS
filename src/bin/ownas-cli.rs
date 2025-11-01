@@ -1,5 +1,5 @@
 use anyhow::Ok;
-use ownas::{Cli, client::{status_handler, stop_handler, test_connection, wait_for_daemon}, commands::Commands};
+use ownas::{Cli, client::{test_connection, wait_for_daemon}, commands::Commands, run::RunCommands, handlers::{show_log_handler, status_handler, stop_handler}};
 use clap::Parser;
 
 #[tokio::main]
@@ -43,7 +43,7 @@ async fn main() -> anyhow::Result<()> {
                 return Ok(())
             }
 
-            if let Err(_) = stop_handler(stream.unwrap(), "stop").await {
+            if let Err(_) = stop_handler(stream.unwrap()).await {
                 println!("Cannot send stop signal to server");
             }
         }
@@ -53,10 +53,25 @@ async fn main() -> anyhow::Result<()> {
                 return Ok(())
             }
 
-            if let Err(_) = status_handler(stream.unwrap(), "status").await {
+            if let Err(_) = status_handler(stream.unwrap()).await {
                 eprintln!("Error handling status command")
             }
 
+        }
+        Commands::Run { subcommand } => {
+            if stream.is_none() {
+                eprintln!("Server is offline");
+                return Ok(())
+            }
+
+            match subcommand {
+                RunCommands::ShowLog => {
+                    if let Err(_) = show_log_handler(stream.unwrap()).await {
+                        eprintln!("Error handling show-log command")
+                    }
+                }
+            }
+            todo!()
         }
     }
 

@@ -2,31 +2,7 @@ use std::{io::Error, thread, time::Duration};
 
 use tokio::{io::{AsyncReadExt, AsyncWriteExt}, net::UnixStream};
 
-use crate::core::responses::DaemonResponse;
-
-pub async fn status_handler(mut stream: UnixStream, cmd: &str) -> anyhow::Result<()> {
-    stream.write_all(cmd.as_bytes()).await?;
-
-    match receive_response(stream).await? {
-        DaemonResponse::Status(s) => println!("{}", s),
-        DaemonResponse::Error(e) => eprintln!("Error executing status command: {}", e),
-        _ => println!("Received unknown response"),
-    }
-
-    Ok(())
-}
-
-pub async fn stop_handler(mut stream: UnixStream, cmd: &str) -> anyhow::Result<()> {
-    stream.write_all(cmd.as_bytes()).await?;
-
-    match receive_response(stream).await? {
-        DaemonResponse::Info(i) => println!("{}", i),
-        DaemonResponse::Error(e) => eprintln!("Error executing stop command: {}", e),
-        _ => println!("Received unknown response"),
-    }
-
-    Ok(())
-}
+use crate::{Commands, core::responses::DaemonResponse};
 
 pub async fn receive_response(mut stream: UnixStream) -> Result<DaemonResponse, Error> {
     let mut buf = Vec::new();
@@ -35,9 +11,18 @@ pub async fn receive_response(mut stream: UnixStream) -> Result<DaemonResponse, 
     Ok(response)
 }
 
+pub async fn send_command(mut stream: UnixStream, command: Commands) -> Result<UnixStream, Error> {
+    let cmd_json = serde_json::to_vec(&command)?;
+    let len = cmd_json.len() as u32;
+
+    stream.write_all(&len.to_be_bytes()).await?;
+    stream.write_all(&cmd_json).await?;
+    Ok(stream)
+}
+
 pub async fn wait_for_daemon(ipc_path: &str) -> bool {
     for _ in 0..30 { // 30 * 100ms = 3s total
-        if UnixStream::connect(ipc_path).await.is_ok() {
+        if UnixStream::connect(ipc_path).await.is_ok() {    println!("Sended");
             return true;
         }
         thread::sleep(Duration::from_millis(100));
