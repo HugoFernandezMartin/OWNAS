@@ -19,7 +19,7 @@ pub async fn stop_handler(stream: UnixStream) -> anyhow::Result<()> {
     match receive_response(stream).await? {
         DaemonResponse::Info(i) => println!("{}", i),
         DaemonResponse::Error(e) => eprintln!("Error executing stop command: {}", e),
-        _ => println!("Received unknown response"),
+        _ => println!("Received unexpected response"),
     }
 
     Ok(())
@@ -28,7 +28,12 @@ pub async fn stop_handler(stream: UnixStream) -> anyhow::Result<()> {
 pub async fn show_log_handler(stream: UnixStream) -> anyhow::Result<()> {
     let stream = send_command(stream, Commands::Run { subcommand: RunCommands::ShowLog }).await?;
 
-    todo!();
+    //Receive log from server
+    match receive_response(stream).await? {
+        DaemonResponse::Info(i) => println!("{}", i),
+        DaemonResponse::Error(e) => eprintln!("Error executing command: {}", e),
+        _ => println!("Received unexpected response"),
+    }
 
     Ok(())
 }
