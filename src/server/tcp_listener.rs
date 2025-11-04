@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use tokio::{net::TcpListener, sync::broadcast::Receiver};
 
-use crate::server::{Server, handler::handle_connection};
+use crate::server::{Server, tcp_handler::handle_tcp_connection};
 
 
 
@@ -19,7 +19,7 @@ pub async fn run_tcp_listener(server: Arc<Server>, mut rx_shutdown: Receiver<()>
     loop {
         tokio::select! {
             Ok((socket, _)) = listener.accept() => {
-                tokio::spawn(handle_connection(socket));
+                tokio::spawn(handle_tcp_connection(socket));
             }
             _ = rx_shutdown.recv() => {
                 tracing::info!("TCP listener stopped successfully");
