@@ -1,7 +1,8 @@
 pub mod builder;
 pub mod ipc_listener;
+pub mod ipc_handler;
 pub mod tcp_listener;
-pub mod handler;
+pub mod tcp_handler;
 pub mod file_manager;
 
 use std::{time::Instant};
