@@ -1,11 +1,12 @@
 pub mod run;
+pub mod files;
 
 use core::fmt;
 
 use clap::Subcommand;
 use serde::{Deserialize, Serialize};
 
-use crate::run::RunCommands;
+use crate::{commands::files::FilesCommands, run::RunCommands};
 
 #[derive(Subcommand, Serialize, Deserialize)]
 pub enum Commands {
@@ -16,6 +17,10 @@ pub enum Commands {
         #[command(subcommand)]
         subcommand: RunCommands,
     },
+    Files {
+        #[command(subcommand)]
+        subcommand: FilesCommands,
+    },
 }
 
 impl fmt::Display for Commands {
@@ -25,6 +30,7 @@ impl fmt::Display for Commands {
             Self::Stop => write!(f, "stop")?,
             Self::Status => write!(f, "status")?,
             Self::Run { subcommand } => write!(f, "run {}", subcommand)?,
+            Self::Files { subcommand } => write!(f, "files {}", subcommand)?,
         }
         Ok(())
     }
