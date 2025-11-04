@@ -1,39 +1,82 @@
 use tokio::net::UnixStream;
+use crate::{
+    Commands,
+    client::{receive_response, send_command},
+    core::responses::{DaemonResponse, ResponseType},
+    files::FilesCommands,
+    run::RunCommands,
+};
+use anyhow::Result;
 
-use crate::{Commands, client::{receive_response, send_command}, core::responses::DaemonResponse, run::RunCommands};
+// === Helpers ===
 
-pub async fn status_handler(stream: UnixStream) -> anyhow::Result<()> {
+async fn handle_standard_response(stream: UnixStream, context: &str) -> Result<()> {
+    match receive_response(stream).await? {
+        DaemonResponse::Success(ResponseType::Info(msg)) => println!("{msg}"),
+        DaemonResponse::Error(err) => eprintln!("Error executing {context} command: {err}"),
+        _ => eprintln!("Unexpected response for {context}"),
+    }
+    Ok(())
+}
+
+async fn handle_status_response(stream: UnixStream, context: &str) -> Result<()> {
+    match receive_response(stream).await? {
+        DaemonResponse::Success(ResponseType::Status(status)) => println!("{status}"),
+        DaemonResponse::Error(err) => eprintln!("Error executing {context} command: {err}"),
+        _ => eprintln!("Unexpected response for {context}"),
+    }
+    Ok(())
+}
+
+async fn handle_file_list_response(stream: UnixStream, context: &str) -> Result<()> {
+    match receive_response(stream).await? {
+        DaemonResponse::Success(ResponseType::Files(files)) => {
+            for file in files {
+                println!("- {}", file);
+            }
+        }
+        DaemonResponse::Error(err) => eprintln!("Error executing {context} command: {err}"),
+        _ => eprintln!("Unexpected response for {context}"),
+    }
+    Ok(())
+}
+
+// === Handlers ===
+
+pub async fn status_handler(stream: UnixStream) -> Result<()> {
     let stream = send_command(stream, Commands::Status).await?;
-    match receive_response(stream).await? {
-        DaemonResponse::Status(s) => println!("{}", s),
-        DaemonResponse::Error(e) => eprintln!("Error executing status command: {}", e),
-        _ => println!("Received unknown response"),
-    }
-
-    Ok(())
+    handle_status_response(stream, "status").await
 }
 
-pub async fn stop_handler(stream: UnixStream) -> anyhow::Result<()> {
+pub async fn stop_handler(stream: UnixStream) -> Result<()> {
     let stream = send_command(stream, Commands::Stop).await?;
-
-    match receive_response(stream).await? {
-        DaemonResponse::Info(i) => println!("{}", i),
-        DaemonResponse::Error(e) => eprintln!("Error executing stop command: {}", e),
-        _ => println!("Received unexpected response"),
-    }
-
-    Ok(())
+    handle_standard_response(stream, "stop").await
 }
 
-pub async fn show_log_handler(stream: UnixStream) -> anyhow::Result<()> {
-    let stream = send_command(stream, Commands::Run { subcommand: RunCommands::ShowLog }).await?;
+pub async fn show_log_handler(stream: UnixStream) -> Result<()> {
+    let stream = send_command(stream, Commands::Run {
+        subcommand: RunCommands::ShowLog,
+    }).await?;
+    handle_standard_response(stream, "show log").await
+}
 
-    //Receive log from server
-    match receive_response(stream).await? {
-        DaemonResponse::Info(i) => println!("{}", i),
-        DaemonResponse::Error(e) => eprintln!("Error executing command: {}", e),
-        _ => println!("Received unexpected response"),
-    }
+pub async fn list_files_handler(stream: UnixStream) -> Result<()> {
+    let stream = send_command(stream, Commands::Files {
+        subcommand: FilesCommands::List,
+    }).await?;
+    handle_file_list_response(stream, "list files").await
+}
 
-    Ok(())
+pub async fn create_file_handler(stream: UnixStream, file_name: String) -> Result<()> {
+    let stream = send_command(stream, Commands::Files {
+        subcommand: FilesCommands::Create { file_name },
+    }).await?;
+    handle_standard_response(stream, "create file").await
+}
+
+pub async fn delete_file_handler(stream: UnixStream, file_name: String) -> Result<()> {
+    let stream = send_command(stream, Commands::Files {
+        subcommand: FilesCommands::Delete { file_name },
+    }).await?;
+    handle_standard_response(stream, "delete file").await
 }

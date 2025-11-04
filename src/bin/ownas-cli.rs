@@ -1,5 +1,5 @@
 use anyhow::Ok;
-use ownas::{Cli, client::{test_connection, wait_for_daemon}, commands::Commands, run::RunCommands, handlers::{show_log_handler, status_handler, stop_handler}};
+use ownas::{Cli, client::{test_connection, wait_for_daemon}, commands::Commands, files::FilesCommands, handlers::*, run::RunCommands};
 use clap::Parser;
 
 #[tokio::main]
@@ -70,6 +70,30 @@ async fn main() -> anyhow::Result<()> {
                         eprintln!("Error handling show-log command")
                     }
                 }
+            }
+        }
+        Commands::Files { subcommand } => {
+            if stream.is_none() {
+                eprintln!("Server is offline");
+                return Ok(())
+            }
+
+            match subcommand {
+                FilesCommands::List => {
+                    if let Err(_) = list_files_handler(stream.unwrap()).await {
+                        eprintln!("Error handling files list command")
+                    }
+                },
+                FilesCommands::Create {file_name} => {
+                    if let Err(_) = create_file_handler(stream.unwrap(), file_name).await {
+                        eprintln!("Error handling create file command")
+                    }
+                },
+                FilesCommands::Delete {file_name} => {
+                    if let Err(_) = delete_file_handler(stream.unwrap(), file_name).await {
+                        eprintln!("Error handling create file command")
+                    }
+                },
             }
         }
     }

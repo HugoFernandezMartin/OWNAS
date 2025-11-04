@@ -22,7 +22,7 @@ pub async fn send_command(mut stream: UnixStream, command: Commands) -> Result<U
 
 pub async fn wait_for_daemon(ipc_path: &str) -> bool {
     for _ in 0..30 { // 30 * 100ms = 3s total
-        if UnixStream::connect(ipc_path).await.is_ok() {    println!("Sended");
+        if UnixStream::connect(ipc_path).await.is_ok() {
             return true;
         }
         thread::sleep(Duration::from_millis(100));

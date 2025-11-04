@@ -6,13 +6,20 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::UnixStream;
 use tokio::{net::UnixListener, sync::broadcast::{self,Sender}};
 
+use crate::file_manager::*;
+use crate::files::FilesCommands;
 use crate::run::RunCommands;
-use crate::{Commands, Server};
-use crate::core::responses::DaemonResponse;
+use crate::server::Server;
+use crate::{Commands};
+use crate::core::responses::{DaemonResponse, ResponseType};
 use crate::core::state::ServerStatus;
 
 pub async fn run_ipc_listener(server: Arc<Server>, tx_shutdown: Sender<()>) -> anyhow::Result<()> {
     let socket_path = "/tmp/ownas.sock";
+
+    let workspace_path = "workspace/";
+    ensure_dir(workspace_path).await?;
+
     //Creates unix socket
     let listener = UnixListener::bind(socket_path)?;
     tracing::info!("IPC server started");
@@ -50,7 +57,7 @@ pub async fn run_ipc_listener(server: Arc<Server>, tx_shutdown: Sender<()>) -> a
 
                     match command {
                         Commands::Stop => {
-                            let response = DaemonResponse::Info("Stopping server...".to_string());
+                            let response = DaemonResponse::Success(ResponseType::Info("Stopping server...".to_string()));
 
                             send_response(stream, response).await?;
 
@@ -60,7 +67,7 @@ pub async fn run_ipc_listener(server: Arc<Server>, tx_shutdown: Sender<()>) -> a
                         Commands::Status => {
                             let status: ServerStatus = server_clone.get_status();
 
-                            let response = DaemonResponse::Status(status);
+                            let response = DaemonResponse::Success(ResponseType::Status(status));
 
                             send_response(stream, response).await?;
 
@@ -74,14 +81,48 @@ pub async fn run_ipc_listener(server: Arc<Server>, tx_shutdown: Sender<()>) -> a
                         Commands::Run {subcommand} => {
                             match subcommand {
                                 RunCommands::ShowLog => {
-                                    let response = match server_clone.get_log() {
-                                        Ok(log) => DaemonResponse::Info(log),
+                                    let response = match server_clone.get_log().await {
+                                        Ok(log) => DaemonResponse::Success(ResponseType::Info(log)),
                                         Err(e) => DaemonResponse::Error(e.to_string()),
                                     };
 
                                     send_response(stream, response).await?;
 
-                                    tracing::trace!("Log response sended succesfully");
+                                    tracing::info!("Log response sended succesfully");
+                                }
+                            }
+                        }
+                        Commands::Files {subcommand} => {
+                            match subcommand {
+                                FilesCommands::List => {
+                                    let response = match list_files(workspace_path).await {
+                                        Ok(files) => DaemonResponse::Success(ResponseType::Files(files)),
+                                        Err(e) => DaemonResponse::Error(e.to_string())
+                                    };
+
+                                    send_response(stream, response).await?;
+
+                                    tracing::info!("List files response sended succesfully");
+                                },
+                                FilesCommands::Create {file_name} => {
+                                    let response = match create_file(workspace_path, &file_name).await {
+                                        Ok(()) => DaemonResponse::Success(ResponseType::Info("File created succesfully".to_string())),
+                                        Err(e) => DaemonResponse::Error(e.to_string())
+                                    };
+
+                                    send_response(stream, response).await?;
+
+                                    tracing::info!("Create file response sended succesfully");
+                                },
+                                FilesCommands::Delete {file_name} => {
+                                    let response = match delete_file(workspace_path, &file_name).await {
+                                        Ok(()) => DaemonResponse::Success(ResponseType::Info("File deleted succesfully".to_string())),
+                                        Err(e) => DaemonResponse::Error(e.to_string())
+                                    };
+
+                                    send_response(stream, response).await?;
+
+                                    tracing::info!("Delete file response sended succesfully");
                                 }
                             }
                         }

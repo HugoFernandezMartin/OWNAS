@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use crate::{ServerData, config::Config, server::Server};
+use crate::{config::Config, server::{Server, ServerData}};
 
 pub struct ServerBuilder {
     cfg: Config
