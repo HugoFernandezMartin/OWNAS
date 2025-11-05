@@ -128,6 +128,36 @@ pub async fn handle_ipc_connection(
 
                 tracing::debug!("Delete file response sent succesfully");
             }
+            FilesCommands::Write { file_name, text } => {
+                //Write text in a file (append)
+                let response = match write_in_file(workspace_path, &file_name, &text).await {
+                    Ok(()) => DaemonResponse::Success(ResponseType::Info(
+                        "Write in file succesfully".to_string(),
+                    )),
+                    Err(e) => {
+                        tracing::error!(error = %e, "Unable to write in file");
+                        DaemonResponse::Error(e.to_string())
+                    }
+                };
+
+                send_response(stream, response).await?;
+
+                tracing::debug!("Write in file response sent succesfully");
+            }
+            FilesCommands::Read { file_name } => {
+                //Read file
+                let response = match read_file(workspace_path, &file_name).await {
+                    Ok(file_data) => DaemonResponse::Success(ResponseType::Info(file_data)),
+                    Err(e) => {
+                        tracing::error!(error = %e, "Unable to read file");
+                        DaemonResponse::Error(e.to_string())
+                    }
+                };
+
+                send_response(stream, response).await?;
+
+                tracing::debug!("Read file response sent succesfully");
+            }
         },
         cmd => {
             //The other commands must never reach server cause CLI prevent that from happen
