@@ -10,7 +10,7 @@ pub fn init_logging(logging_cfg: &LoggingConfig) -> Result<WorkerGuard, anyhow::
     let path = &logging_cfg.logfile_path;
 
     fs::write(path, "")?;
-    
+
     let dir = Path::new(path).parent().unwrap();
     let file = Path::new(path).file_name().unwrap();
 
@@ -25,5 +25,6 @@ pub fn init_logging(logging_cfg: &LoggingConfig) -> Result<WorkerGuard, anyhow::
 
     tracing::subscriber::set_global_default(subscriber)?;
 
+    tracing::debug!("Logging tool iniciated");
     Ok(guard)
 }
