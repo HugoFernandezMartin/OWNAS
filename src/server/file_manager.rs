@@ -1,8 +1,12 @@
-use std::{io::{Error, ErrorKind}, path::Path};
+use std::{
+    io::{Error, ErrorKind},
+    path::Path,
+};
 
 use tokio::fs::{self, OpenOptions};
 
-pub async fn list_files(path: &str) -> anyhow::Result<Vec<String>>{
+pub async fn list_files(path: &str) -> anyhow::Result<Vec<String>> {
+    tracing::debug!("Trying to list files");
     let mut files = Vec::new();
     let mut entries = fs::read_dir(path).await?;
     while let Some(entry) = entries.next_entry().await? {
@@ -12,29 +16,45 @@ pub async fn list_files(path: &str) -> anyhow::Result<Vec<String>>{
     Ok(files)
 }
 
-pub async fn create_file(dir_path: &str, file_name: &str) -> Result<(), Error> {
+pub async fn create_file(dir_path: &str, file_name: &str) -> Result<(), String> {
+    tracing::debug!("Trying to create file");
     let path = Path::new(dir_path).join(file_name);
-    let _file = OpenOptions::new()
+    if let Err(e) = OpenOptions::new()
         .write(true)
-        .create(true)
+        .create_new(true)
         .open(path)
-        .await?;
+        .await
+    {
+        if e.kind() == ErrorKind::AlreadyExists {
+            return Err("File already exists".to_string());
+        } else {
+            return Err(e.to_string());
+        }
+    }
     Ok(())
-} 
+}
 
-pub async fn delete_file(dir_path: &str, file_name: &str) -> Result<(), Error> {
+pub async fn delete_file(dir_path: &str, file_name: &str) -> Result<(), String> {
+    tracing::debug!("Trying to delete file");
     let path = Path::new(dir_path).join(file_name);
-    fs::remove_file(path).await?;
+    if let Err(e) = fs::remove_file(path).await {
+        if e.kind() == ErrorKind::NotFound {
+            return Err("File does not exists".to_string());
+        } else {
+            return Err(e.to_string());
+        }
+    }
 
     Ok(())
 }
 
 pub async fn ensure_dir(path: &str) -> Result<(), Error> {
+    tracing::debug!("Trying to ensure directory");
     if let Err(e) = fs::create_dir_all(path).await {
         if e.kind() == ErrorKind::AlreadyExists {
-            return Ok(())
+            return Ok(());
         }
-        return Err(e)
+        return Err(e);
     }
     Ok(())
 }

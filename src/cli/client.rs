@@ -1,8 +1,11 @@
 use std::{io::Error, thread, time::Duration};
 
-use tokio::{io::{AsyncReadExt, AsyncWriteExt}, net::UnixStream};
+use tokio::{
+    io::{AsyncReadExt, AsyncWriteExt},
+    net::UnixStream,
+};
 
-use crate::{Commands, core::responses::DaemonResponse};
+use crate::{Commands, core::responses::DaemonResponse, handlers::ping_handler};
 
 pub async fn receive_response(mut stream: UnixStream) -> Result<DaemonResponse, Error> {
     let mut buf = Vec::new();
@@ -21,10 +24,12 @@ pub async fn send_command(mut stream: UnixStream, command: Commands) -> Result<U
 }
 
 pub async fn wait_for_daemon(ipc_path: &str) -> bool {
-    for _ in 0..30 { // 30 * 100ms = 3s total
-        if UnixStream::connect(ipc_path).await.is_ok() {
+    for _ in 0..30 {
+        // 30 * 100ms = 3s total
+        if let Some(stream) = test_connection(ipc_path).await {
+            ping_handler(stream).await.unwrap();
             return true;
-        }
+        };
         thread::sleep(Duration::from_millis(100));
     }
     false

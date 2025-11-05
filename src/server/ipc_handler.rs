@@ -17,7 +17,7 @@ pub async fn handle_ipc_connection(
     server_clone: Arc<Server>,
     workspace_path: &str,
 ) -> anyhow::Result<()> {
-    //Read command with length protocol
+    //Read command from CLI
     let (command, stream) = match receive_command(stream).await {
         Ok((c, s)) => (c, s),
         Err(e) => {
@@ -28,8 +28,18 @@ pub async fn handle_ipc_connection(
 
     tracing::info!("IPC Command received: {}", command);
 
+    //Manage according to command
     match command {
+        Commands::Ping => {
+            //Just respose to CLI
+            let response = DaemonResponse::Success(ResponseType::Info("Pong".to_string()));
+
+            send_response(stream, response).await?;
+
+            tracing::debug!("Ping response sent successfully");
+        }
         Commands::Stop => {
+            //Send shutdown signal to this and other threads
             let response =
                 DaemonResponse::Success(ResponseType::Info("Stopping server...".to_string()));
 
@@ -45,6 +55,7 @@ pub async fn handle_ipc_connection(
         }
 
         Commands::Status => {
+            //Get status from server data and response to CLI
             let status: ServerStatus = server_clone.get_status();
 
             let response = DaemonResponse::Success(ResponseType::Status(status));
@@ -55,19 +66,19 @@ pub async fn handle_ipc_connection(
         }
 
         Commands::Start => {
+            //The command start must never reach server cause CLI prevent that from happen
             tracing::error!("Start command received: NOT SUPPOSED TO HAPPEN");
             anyhow::bail!("Start command received: NOT SUPPOSED TO HAPPEN");
         }
 
         Commands::Run { subcommand } => match subcommand {
             RunCommands::ShowLog => {
-                tracing::debug!("Trying to get log");
-
+                //Read log file and send to CLI
                 let response = match server_clone.get_log().await {
                     Ok(log) => DaemonResponse::Success(ResponseType::Info(log)),
                     Err(e) => {
                         tracing::error!(error = %e, "Unable to get log");
-                        DaemonResponse::Error("Unable to get log: {e}".to_string())
+                        DaemonResponse::Error(e.to_string())
                     }
                 };
 
@@ -78,15 +89,12 @@ pub async fn handle_ipc_connection(
         },
         Commands::Files { subcommand } => match subcommand {
             FilesCommands::List => {
-                tracing::debug!("Trying to list files");
-
+                //Read workspace directory and send all file names in it
                 let response = match list_files(workspace_path).await {
                     Ok(files) => DaemonResponse::Success(ResponseType::Files(files)),
                     Err(e) => {
                         tracing::error!(error = %e, "Unable to list files from directory");
-                        DaemonResponse::Error(
-                            "Unable to list files from directory: {e}".to_string(),
-                        )
+                        DaemonResponse::Error(e.to_string())
                     }
                 };
 
@@ -95,15 +103,14 @@ pub async fn handle_ipc_connection(
                 tracing::debug!("List files response sent succesfully");
             }
             FilesCommands::Create { file_name } => {
-                tracing::debug!("Trying to create file");
-
+                //Create a new empty file in workspace directory
                 let response = match create_file(workspace_path, &file_name).await {
                     Ok(()) => DaemonResponse::Success(ResponseType::Info(
                         "File created succesfully".to_string(),
                     )),
                     Err(e) => {
                         tracing::error!(error = %e, "Unable to create file");
-                        DaemonResponse::Error("Unable to create file: {e}".to_string())
+                        DaemonResponse::Error(e)
                     }
                 };
 
@@ -112,13 +119,14 @@ pub async fn handle_ipc_connection(
                 tracing::debug!("Create file response sent succesfully");
             }
             FilesCommands::Delete { file_name } => {
+                //Delete a file from workspace directory given its name
                 let response = match delete_file(workspace_path, &file_name).await {
                     Ok(()) => DaemonResponse::Success(ResponseType::Info(
                         "File deleted succesfully".to_string(),
                     )),
                     Err(e) => {
                         tracing::error!(error = %e, "Unable to delete file");
-                        DaemonResponse::Error("Unable to delete file: {e}".to_string())
+                        DaemonResponse::Error(e)
                     }
                 };
 
@@ -158,6 +166,8 @@ async fn send_response_handler(
 
 async fn receive_command(mut stream: UnixStream) -> Result<(Commands, UnixStream), anyhow::Error> {
     tracing::debug!("Trying to receive command");
+
+    //Receive length
     let mut len_buf = [0u8; 4];
     stream.read_exact(&mut len_buf).await?;
     let len = u32::from_be_bytes(len_buf);

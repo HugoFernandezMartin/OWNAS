@@ -1,5 +1,5 @@
-pub mod run;
 pub mod files;
+pub mod run;
 
 use core::fmt;
 
@@ -10,6 +10,7 @@ use crate::{commands::files::FilesCommands, run::RunCommands};
 
 #[derive(Subcommand, Serialize, Deserialize)]
 pub enum Commands {
+    Ping,
     Start,
     Stop,
     Status,
@@ -26,6 +27,7 @@ pub enum Commands {
 impl fmt::Display for Commands {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::Ping => write!(f, "ping")?,
             Self::Start => write!(f, "start")?,
             Self::Stop => write!(f, "stop")?,
             Self::Status => write!(f, "status")?,
@@ -35,4 +37,3 @@ impl fmt::Display for Commands {
         Ok(())
     }
 }
-

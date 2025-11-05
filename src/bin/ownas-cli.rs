@@ -1,6 +1,13 @@
 use anyhow::Ok;
-use ownas::{Cli, client::{test_connection, wait_for_daemon}, commands::Commands, files::FilesCommands, handlers::*, run::RunCommands};
 use clap::Parser;
+use ownas::{
+    Cli,
+    client::{test_connection, wait_for_daemon},
+    commands::Commands,
+    files::FilesCommands,
+    handlers::*,
+    run::RunCommands,
+};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -10,16 +17,26 @@ async fn main() -> anyhow::Result<()> {
     let stream = test_connection(ipc_path).await;
 
     match cli.command {
+        Commands::Ping => {
+            if stream.is_none() {
+                eprintln!("Server is offline");
+                return Ok(());
+            }
+
+            if let Err(_) = ping_handler(stream.unwrap()).await {
+                println!("Error handling ping command");
+            }
+        }
         Commands::Start => {
             //First check if server is started already
             if stream.is_some() {
                 eprintln!("Server is already running");
-                return Ok(())
+                return Ok(());
             }
 
             //If dev mode, execute the comand with cargo
             //If not, execute the normal command
-           let is_dev = std::env::var("OWNAS_DEV").is_ok();
+            let is_dev = std::env::var("OWNAS_DEV").is_ok();
             if is_dev {
                 std::process::Command::new("cargo")
                     .args(&["run", "--quiet", "--bin", "ownas-daemon"])
@@ -30,7 +47,7 @@ async fn main() -> anyhow::Result<()> {
                     .spawn()
                     .expect("Failed to start daemon");
             }
-            
+
             if wait_for_daemon("/tmp/ownas.sock").await {
                 println!("Server started successfully");
             } else {
@@ -40,7 +57,7 @@ async fn main() -> anyhow::Result<()> {
         Commands::Stop => {
             if stream.is_none() {
                 eprintln!("Server is offline");
-                return Ok(())
+                return Ok(());
             }
 
             if let Err(_) = stop_handler(stream.unwrap()).await {
@@ -50,18 +67,17 @@ async fn main() -> anyhow::Result<()> {
         Commands::Status => {
             if stream.is_none() {
                 eprintln!("Server is offline");
-                return Ok(())
+                return Ok(());
             }
 
             if let Err(_) = status_handler(stream.unwrap()).await {
                 eprintln!("Error handling status command")
             }
-
         }
         Commands::Run { subcommand } => {
             if stream.is_none() {
                 eprintln!("Server is offline");
-                return Ok(())
+                return Ok(());
             }
 
             match subcommand {
@@ -75,7 +91,7 @@ async fn main() -> anyhow::Result<()> {
         Commands::Files { subcommand } => {
             if stream.is_none() {
                 eprintln!("Server is offline");
-                return Ok(())
+                return Ok(());
             }
 
             match subcommand {
@@ -83,17 +99,17 @@ async fn main() -> anyhow::Result<()> {
                     if let Err(_) = list_files_handler(stream.unwrap()).await {
                         eprintln!("Error handling files list command")
                     }
-                },
-                FilesCommands::Create {file_name} => {
+                }
+                FilesCommands::Create { file_name } => {
                     if let Err(_) = create_file_handler(stream.unwrap(), file_name).await {
                         eprintln!("Error handling create file command")
                     }
-                },
-                FilesCommands::Delete {file_name} => {
+                }
+                FilesCommands::Delete { file_name } => {
                     if let Err(_) = delete_file_handler(stream.unwrap(), file_name).await {
                         eprintln!("Error handling create file command")
                     }
-                },
+                }
             }
         }
     }
