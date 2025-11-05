@@ -106,3 +106,25 @@ pub async fn delete_file_handler(stream: UnixStream, file_name: String) -> Resul
     .await?;
     handle_standard_response(stream, "delete file").await
 }
+
+pub async fn write_file_handler(stream: UnixStream, file_name: String, text: String) -> Result<()> {
+    let stream = send_command(
+        stream,
+        Commands::Files {
+            subcommand: FilesCommands::Write { file_name, text },
+        },
+    )
+    .await?;
+    handle_standard_response(stream, "write file").await
+}
+
+pub async fn read_file_handler(stream: UnixStream, file_name: String) -> Result<()> {
+    let stream = send_command(
+        stream,
+        Commands::Files {
+            subcommand: FilesCommands::Read { file_name },
+        },
+    )
+    .await?;
+    handle_standard_response(stream, "read file").await
+}

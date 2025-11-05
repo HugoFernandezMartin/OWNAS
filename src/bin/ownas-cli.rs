@@ -104,6 +104,16 @@ async fn main() -> anyhow::Result<()> {
                         eprintln!("Error handling create file command")
                     }
                 }
+                FilesCommands::Write { file_name, text } => {
+                    if let Err(_) = write_file_handler(stream.unwrap(), file_name, text).await {
+                        eprintln!("Error handling write file command")
+                    }
+                }
+                FilesCommands::Read { file_name } => {
+                    if let Err(_) = read_file_handler(stream.unwrap(), file_name).await {
+                        eprintln!("Error handling read file command")
+                    }
+                }
             }
         }
     }
