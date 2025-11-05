@@ -4,18 +4,19 @@ use tokio::{net::TcpListener, sync::broadcast::Receiver};
 
 use crate::server::{Server, tcp_handler::handle_tcp_connection};
 
-
-
-pub async fn run_tcp_listener(server: Arc<Server>, mut rx_shutdown: Receiver<()>) -> anyhow::Result<()> {
+pub async fn run_tcp_listener(
+    server: Arc<Server>,
+    mut rx_shutdown: Receiver<()>,
+) -> anyhow::Result<()> {
     let addr = server.cfg.server.get_addr();
     let listener = match TcpListener::bind(&addr).await {
         Ok(l) => l,
         Err(e) => {
-            tracing::error!("ErrorTCP: {}", e);
-            return anyhow::Ok(());
+            tracing::error!(error = %e, "Unable to start TCP Listener");
+            anyhow::bail!("Unable to start TCP Listener: {e}");
         }
     };
-    tracing::info!("Server TCP started on {}", &addr);
+    tracing::info!(?addr, "TCP Listener started successfully");
     loop {
         tokio::select! {
             Ok((socket, _)) = listener.accept() => {
@@ -26,6 +27,6 @@ pub async fn run_tcp_listener(server: Arc<Server>, mut rx_shutdown: Receiver<()>
                 break;
             }
         }
-    }  
+    }
     Ok(())
 }

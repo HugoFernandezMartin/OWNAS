@@ -1,6 +1,6 @@
 {
   "logging": {
-    "tracing_level": "TRACE",
+    "tracing_level": "INFO",
     "logfile_path": "tmp/ownas.log"
   },
   "server": {

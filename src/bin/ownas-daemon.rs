@@ -1,8 +1,10 @@
 use std::{path::Path, sync::Arc};
 
-use ownas::{builder, init::init_logging, ipc_listener::run_ipc_listener, load_config, tcp_listener::run_tcp_listener};
+use ownas::{
+    builder, init::init_logging, ipc_listener::run_ipc_listener, load_config,
+    tcp_listener::run_tcp_listener,
+};
 use tokio::sync::broadcast;
-
 
 // src/bin/ownas-daemon.rs
 
@@ -13,7 +15,7 @@ async fn main() -> anyhow::Result<()> {
 
     if Path::new("/tmp/ownas.sock").exists() {
         eprintln!("Server already running");
-        std::process::exit(1)
+        anyhow::bail!("Server already running");
     }
 
     let _guard = init_logging(&cfg.logging)?;
@@ -29,16 +31,21 @@ async fn main() -> anyhow::Result<()> {
     let ipc_shutdown_tx = shutdown_tx.clone();
     let tcp_shutdown_tx = shutdown_tx.clone();
 
+    tracing::debug!("Trying to start threads");
+
     //Throw server threads
     let ipc = tokio::spawn(run_ipc_listener(server.clone(), ipc_shutdown_tx.clone()));
-    let tcp = tokio::spawn(run_tcp_listener(server.clone() , tcp_shutdown_tx.subscribe()));
+    let tcp = tokio::spawn(run_tcp_listener(
+        server.clone(),
+        tcp_shutdown_tx.subscribe(),
+    ));
 
-    tracing::trace!("Threads started");
+    tracing::debug!("Threads started");
 
     //Wait for threads to finish
     let _ = tokio::join!(tcp, ipc);
-    
+
     tracing::info!("Server shutting down...");
-    
+
     std::process::exit(1)
 }
