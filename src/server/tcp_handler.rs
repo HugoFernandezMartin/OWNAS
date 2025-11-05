@@ -1,5 +1,5 @@
 use tokio::net::TcpStream;
 
 pub async fn handle_tcp_connection(_socket: TcpStream) {
-    todo!()
-} 
+    tracing::warn!("TCP NOT YET IMPLEMENTED")
+}

@@ -1,4 +1,3 @@
-use tokio::net::UnixStream;
 use crate::{
     Commands,
     client::{receive_response, send_command},
@@ -7,6 +6,7 @@ use crate::{
     run::RunCommands,
 };
 use anyhow::Result;
+use tokio::net::UnixStream;
 
 // === Helpers ===
 
@@ -43,6 +43,16 @@ async fn handle_file_list_response(stream: UnixStream, context: &str) -> Result<
 
 // === Handlers ===
 
+pub async fn ping_handler(stream: UnixStream) -> Result<()> {
+    let stream = send_command(stream, Commands::Ping).await?;
+    match receive_response(stream).await? {
+        DaemonResponse::Success(ResponseType::Info(_)) => {}
+        DaemonResponse::Error(err) => eprintln!("Error executing ping command: {err}"),
+        _ => eprintln!("Unexpected response for ping"),
+    }
+    Ok(())
+}
+
 pub async fn status_handler(stream: UnixStream) -> Result<()> {
     let stream = send_command(stream, Commands::Status).await?;
     handle_status_response(stream, "status").await
@@ -54,29 +64,45 @@ pub async fn stop_handler(stream: UnixStream) -> Result<()> {
 }
 
 pub async fn show_log_handler(stream: UnixStream) -> Result<()> {
-    let stream = send_command(stream, Commands::Run {
-        subcommand: RunCommands::ShowLog,
-    }).await?;
+    let stream = send_command(
+        stream,
+        Commands::Run {
+            subcommand: RunCommands::ShowLog,
+        },
+    )
+    .await?;
     handle_standard_response(stream, "show log").await
 }
 
 pub async fn list_files_handler(stream: UnixStream) -> Result<()> {
-    let stream = send_command(stream, Commands::Files {
-        subcommand: FilesCommands::List,
-    }).await?;
+    let stream = send_command(
+        stream,
+        Commands::Files {
+            subcommand: FilesCommands::List,
+        },
+    )
+    .await?;
     handle_file_list_response(stream, "list files").await
 }
 
 pub async fn create_file_handler(stream: UnixStream, file_name: String) -> Result<()> {
-    let stream = send_command(stream, Commands::Files {
-        subcommand: FilesCommands::Create { file_name },
-    }).await?;
+    let stream = send_command(
+        stream,
+        Commands::Files {
+            subcommand: FilesCommands::Create { file_name },
+        },
+    )
+    .await?;
     handle_standard_response(stream, "create file").await
 }
 
 pub async fn delete_file_handler(stream: UnixStream, file_name: String) -> Result<()> {
-    let stream = send_command(stream, Commands::Files {
-        subcommand: FilesCommands::Delete { file_name },
-    }).await?;
+    let stream = send_command(
+        stream,
+        Commands::Files {
+            subcommand: FilesCommands::Delete { file_name },
+        },
+    )
+    .await?;
     handle_standard_response(stream, "delete file").await
 }
