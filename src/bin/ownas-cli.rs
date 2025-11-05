@@ -34,25 +34,7 @@ async fn main() -> anyhow::Result<()> {
                 return Ok(());
             }
 
-            //If dev mode, execute the comand with cargo
-            //If not, execute the normal command
-            let is_dev = std::env::var("OWNAS_DEV").is_ok();
-            if is_dev {
-                std::process::Command::new("cargo")
-                    .args(&["run", "--quiet", "--bin", "ownas-daemon"])
-                    .spawn()
-                    .expect("Failed to start daemon");
-            } else {
-                std::process::Command::new("ownas-daemon")
-                    .spawn()
-                    .expect("Failed to start daemon");
-            }
-
-            if wait_for_daemon("/tmp/ownas.sock").await {
-                println!("Server started successfully");
-            } else {
-                eprintln!("Cannot start server, check log");
-            }
+            start_server(ipc_path).await;
         }
         Commands::Stop => {
             if stream.is_none() {
@@ -63,6 +45,18 @@ async fn main() -> anyhow::Result<()> {
             if let Err(_) = stop_handler(stream.unwrap()).await {
                 println!("Cannot send stop signal to server");
             }
+        }
+        Commands::Restart => {
+            if stream.is_none() {
+                eprintln!("Server is offline");
+                return Ok(());
+            }
+
+            if let Err(_) = stop_handler(stream.unwrap()).await {
+                println!("Cannot send stop signal to server");
+            }
+
+            start_server(ipc_path).await;
         }
         Commands::Status => {
             if stream.is_none() {
@@ -115,4 +109,26 @@ async fn main() -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+async fn start_server(ipc_path: &str) {
+    //If dev mode, execute the comand with cargo
+    //If not, execute the normal command
+    let is_dev = std::env::var("OWNAS_DEV").is_ok();
+    if is_dev {
+        std::process::Command::new("cargo")
+            .args(&["run", "--quiet", "--bin", "ownas-daemon"])
+            .spawn()
+            .expect("Failed to start daemon");
+    } else {
+        std::process::Command::new("ownas-daemon")
+            .spawn()
+            .expect("Failed to start daemon");
+    }
+
+    if wait_for_daemon(ipc_path).await {
+        println!("Server started successfully");
+    } else {
+        eprintln!("Cannot start server, check log");
+    }
 }

@@ -65,12 +65,6 @@ pub async fn handle_ipc_connection(
             tracing::debug!("Status response sent succesfully");
         }
 
-        Commands::Start => {
-            //The command start must never reach server cause CLI prevent that from happen
-            tracing::error!("Start command received: NOT SUPPOSED TO HAPPEN");
-            anyhow::bail!("Start command received: NOT SUPPOSED TO HAPPEN");
-        }
-
         Commands::Run { subcommand } => match subcommand {
             RunCommands::ShowLog => {
                 //Read log file and send to CLI
@@ -135,6 +129,11 @@ pub async fn handle_ipc_connection(
                 tracing::debug!("Delete file response sent succesfully");
             }
         },
+        cmd => {
+            //The other commands must never reach server cause CLI prevent that from happen
+            tracing::error!("{cmd} command received: NOT SUPPOSED TO HAPPEN");
+            anyhow::bail!("{cmd} command received: NOT SUPPOSED TO HAPPEN");
+        }
     }
     tracing::info!("Command processed succesfully");
     Ok::<_, anyhow::Error>(())

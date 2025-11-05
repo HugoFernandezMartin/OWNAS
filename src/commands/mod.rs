@@ -13,6 +13,7 @@ pub enum Commands {
     Ping,
     Start,
     Stop,
+    Restart,
     Status,
     Run {
         #[command(subcommand)]
@@ -30,6 +31,7 @@ impl fmt::Display for Commands {
             Self::Ping => write!(f, "ping")?,
             Self::Start => write!(f, "start")?,
             Self::Stop => write!(f, "stop")?,
+            Self::Restart => write!(f, "restart")?,
             Self::Status => write!(f, "status")?,
             Self::Run { subcommand } => write!(f, "run {}", subcommand)?,
             Self::Files { subcommand } => write!(f, "files {}", subcommand)?,
