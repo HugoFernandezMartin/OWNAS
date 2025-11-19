@@ -5,12 +5,12 @@ use tokio::{
     net::UnixStream,
 };
 
-use crate::{Commands, core::responses::DaemonResponse, handlers::ping_handler};
+use crate::{Commands, core::responses::ServerResponse, handlers::ping_handler};
 
-pub async fn receive_response(mut stream: UnixStream) -> Result<DaemonResponse, Error> {
+pub async fn receive_response(mut stream: UnixStream) -> Result<ServerResponse, Error> {
     let mut buf = Vec::new();
     stream.read_to_end(&mut buf).await?;
-    let response: DaemonResponse = serde_json::from_slice(&buf)?;
+    let response: ServerResponse = serde_json::from_slice(&buf)?;
     Ok(response)
 }
 
