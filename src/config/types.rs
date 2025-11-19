@@ -1,17 +1,21 @@
 use serde::{Deserialize, Serialize};
 
-
 #[derive(Clone, Deserialize, Serialize)]
 pub struct Config {
     pub logging: LoggingConfig,
-    pub server: ServerConfig
+    pub server: ServerConfig,
 }
 
+impl Config {
+    pub fn get_addr(&self) -> String {
+        return format!("{}:{}", self.server.host, self.server.port);
+    }
+}
 //Logging tool configuration
 #[derive(Clone, Deserialize, Serialize)]
 pub struct LoggingConfig {
     pub tracing_level: String,
-    pub logfile_path: String
+    pub logfile_path: String,
 }
 
 impl LoggingConfig {
@@ -36,10 +40,4 @@ impl LoggingConfig {
 pub struct ServerConfig {
     pub host: String,
     pub port: u16,
-}
-
-impl ServerConfig {
-    pub fn get_addr(&self) -> String {
-        return format!("{}:{}", self.host, self.port);
-    }
 }

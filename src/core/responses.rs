@@ -3,9 +3,9 @@ use serde::{Deserialize, Serialize};
 use crate::core::state::ServerStatus;
 
 #[derive(Serialize, Deserialize)]
-pub enum DaemonResponse {
+pub enum ServerResponse {
     Success(ResponseType),
-    Error(String)
+    Error(String),
 }
 
 #[derive(Serialize, Deserialize)]

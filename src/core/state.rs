@@ -5,20 +5,20 @@ use serde::{Deserialize, Serialize};
 
 use crate::Config;
 
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ServerStatus {
     status: Status,
     pid: u32,
     uptime: Duration,
+    tcp_addr: String,
     log_file: String,
-    log_level: String
+    log_level: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Status {
     Running,
-    NotAvailable
+    NotAvailable,
 }
 
 impl fmt::Display for Status {
@@ -34,7 +34,14 @@ impl fmt::Display for Status {
 impl ServerStatus {
     pub fn new(status: Status, pid: u32, start_time: Instant, cfg: &Config) -> ServerStatus {
         let uptime = Instant::now() - start_time;
-        ServerStatus { status, pid, uptime, log_file: cfg.logging.logfile_path.clone(), log_level: cfg.logging.tracing_level.clone() }
+        ServerStatus {
+            status,
+            pid,
+            uptime,
+            tcp_addr: cfg.get_addr(),
+            log_file: cfg.logging.logfile_path.clone(),
+            log_level: cfg.logging.tracing_level.clone(),
+        }
     }
 }
 
@@ -44,6 +51,7 @@ impl fmt::Display for ServerStatus {
         writeln!(f, "Server status: {}", self.status)?;
         writeln!(f, "PID: {}", self.pid)?;
         writeln!(f, "Uptime: {} seconds", self.uptime.as_secs())?;
+        writeln!(f, "Tcp Address: {}", self.tcp_addr)?;
         writeln!(f, "LogFile: {}", self.log_file)?;
         writeln!(f, "LogLevel: {}", self.log_level)?;
         Ok(())

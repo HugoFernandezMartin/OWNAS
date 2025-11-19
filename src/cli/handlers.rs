@@ -1,7 +1,7 @@
 use crate::{
     Commands,
     client::{receive_response, send_command},
-    core::responses::{DaemonResponse, ResponseType},
+    core::responses::{ResponseType, ServerResponse},
     files::FilesCommands,
     run::RunCommands,
 };
@@ -12,8 +12,8 @@ use tokio::net::UnixStream;
 
 async fn handle_standard_response(stream: UnixStream, context: &str) -> Result<()> {
     match receive_response(stream).await? {
-        DaemonResponse::Success(ResponseType::Info(msg)) => println!("{msg}"),
-        DaemonResponse::Error(err) => eprintln!("Error executing {context} command: {err}"),
+        ServerResponse::Success(ResponseType::Info(msg)) => println!("{msg}"),
+        ServerResponse::Error(err) => eprintln!("Error executing {context} command: {err}"),
         _ => eprintln!("Unexpected response for {context}"),
     }
     Ok(())
@@ -21,8 +21,8 @@ async fn handle_standard_response(stream: UnixStream, context: &str) -> Result<(
 
 async fn handle_status_response(stream: UnixStream, context: &str) -> Result<()> {
     match receive_response(stream).await? {
-        DaemonResponse::Success(ResponseType::Status(status)) => println!("{status}"),
-        DaemonResponse::Error(err) => eprintln!("Error executing {context} command: {err}"),
+        ServerResponse::Success(ResponseType::Status(status)) => print!("{status}"),
+        ServerResponse::Error(err) => eprintln!("Error executing {context} command: {err}"),
         _ => eprintln!("Unexpected response for {context}"),
     }
     Ok(())
@@ -30,12 +30,12 @@ async fn handle_status_response(stream: UnixStream, context: &str) -> Result<()>
 
 async fn handle_file_list_response(stream: UnixStream, context: &str) -> Result<()> {
     match receive_response(stream).await? {
-        DaemonResponse::Success(ResponseType::Files(files)) => {
+        ServerResponse::Success(ResponseType::Files(files)) => {
             for file in files {
                 println!("- {}", file);
             }
         }
-        DaemonResponse::Error(err) => eprintln!("Error executing {context} command: {err}"),
+        ServerResponse::Error(err) => eprintln!("Error executing {context} command: {err}"),
         _ => eprintln!("Unexpected response for {context}"),
     }
     Ok(())
@@ -46,8 +46,8 @@ async fn handle_file_list_response(stream: UnixStream, context: &str) -> Result<
 pub async fn ping_handler(stream: UnixStream) -> Result<()> {
     let stream = send_command(stream, Commands::Ping).await?;
     match receive_response(stream).await? {
-        DaemonResponse::Success(ResponseType::Info(_)) => {}
-        DaemonResponse::Error(err) => eprintln!("Error executing ping command: {err}"),
+        ServerResponse::Success(ResponseType::Info(_)) => {}
+        ServerResponse::Error(err) => eprintln!("Error executing ping command: {err}"),
         _ => eprintln!("Unexpected response for ping"),
     }
     Ok(())
@@ -56,6 +56,11 @@ pub async fn ping_handler(stream: UnixStream) -> Result<()> {
 pub async fn status_handler(stream: UnixStream) -> Result<()> {
     let stream = send_command(stream, Commands::Status).await?;
     handle_status_response(stream, "status").await
+}
+
+pub async fn restart_handler(stream: UnixStream) -> Result<()> {
+    let stream = send_command(stream, Commands::Restart).await?;
+    handle_standard_response(stream, "restart").await
 }
 
 pub async fn stop_handler(stream: UnixStream) -> Result<()> {

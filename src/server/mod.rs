@@ -2,8 +2,7 @@ pub mod builder;
 pub mod file_manager;
 pub mod ipc_handler;
 pub mod ipc_listener;
-pub mod tcp_handler;
-pub mod tcp_listener;
+pub mod tcp_setup;
 
 use std::time::Instant;
 
@@ -24,6 +23,7 @@ pub struct ServerData {
 
 impl Server {
     pub fn get_status(&self) -> ServerStatus {
+        tracing::trace!("Returning status");
         ServerStatus::new(
             Status::Running,
             std::process::id(),

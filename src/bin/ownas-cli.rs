@@ -52,11 +52,9 @@ async fn main() -> anyhow::Result<()> {
                 return Ok(());
             }
 
-            if let Err(_) = stop_handler(stream.unwrap()).await {
-                println!("Cannot send stop signal to server");
+            if let Err(_) = restart_handler(stream.unwrap()).await {
+                println!("Error handling restart command");
             }
-
-            start_server(ipc_path).await;
         }
         Commands::Status => {
             if stream.is_none() {
@@ -137,6 +135,7 @@ async fn start_server(ipc_path: &str) {
     }
 
     if wait_for_daemon(ipc_path).await {
+        //TODO wait also for tcp
         println!("Server started successfully");
     } else {
         eprintln!("Cannot start server, check log");
